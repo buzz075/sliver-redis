@@ -187,6 +187,7 @@ const (
 	DnsStr         = "dns"
 	HttpStr        = "http"
 	HttpsStr       = "https"
+	RedisStr       = "redis"
 	NamedPipeStr   = "named-pipe"
 	TCPListenerStr = "tcp"
 	UDPListenerStr = "udp"

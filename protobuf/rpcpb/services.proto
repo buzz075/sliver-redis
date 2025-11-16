@@ -38,6 +38,7 @@ service SliverRPC {
   rpc StartDNSListener(clientpb.DNSListenerReq) returns (clientpb.ListenerJob);
   rpc StartHTTPSListener(clientpb.HTTPListenerReq) returns (clientpb.ListenerJob);
   rpc StartHTTPListener(clientpb.HTTPListenerReq) returns (clientpb.ListenerJob);
+  rpc StartRedisListener(clientpb.RedisListenerReq) returns (clientpb.ListenerJob);
   
   // *** Beacons ***
   rpc GetBeacons(commonpb.Empty) returns (clientpb.Beacons);

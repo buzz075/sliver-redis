@@ -360,6 +360,7 @@ message ListenerJob {
   HTTPListenerReq HTTPConf = 7;
   MultiplayerListenerReq MultiConf = 8;
   StagerListenerReq TCPConf = 9;
+  RedisListenerReq RedisConf = 10;
 }
 
 message MultiplayerListenerReq {
@@ -401,6 +402,16 @@ message HTTPListenerReq {
   int64 LongPollTimeout = 11;
   int64 LongPollJitter = 12;
   bool RandomizeJARM = 13; // Only valid with Secure = true
+}
+
+// Redis Listener
+message RedisListenerReq {
+  string Host = 1;
+  uint32 Port = 2;
+  string Password = 3;
+  uint32 DB = 4; // Redis database number (default 0)
+  bool TLSEnabled = 5; // Use TLS for Redis connection
+  bool EnforceOTP = 6;
 }
 
 // Named Pipes Messages for pivoting

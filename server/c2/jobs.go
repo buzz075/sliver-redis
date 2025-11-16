@@ -169,6 +169,42 @@ func StartDNSListenerJob(dnsListener *clientpb.DNSListenerReq) (*core.Job, error
 	return job, nil
 }
 
+// StartRedisListenerJob - Start a Redis listener as a job
+func StartRedisListenerJob(req *clientpb.RedisListenerReq) (*core.Job, error) {
+	server, err := StartRedisListener(req)
+	if err != nil {
+		return nil, err
+	}
+
+	job := &core.Job{
+		ID:          core.NextJobID(),
+		Name:        constants.RedisStr,
+		Description: fmt.Sprintf("redis listener on %s:%d", req.Host, req.Port),
+		Protocol:    constants.TCPListenerStr,
+		Port:        uint16(req.Port),
+		JobCtrl:     make(chan bool),
+	}
+	core.Jobs.Add(job)
+
+	cleanup := func(err error) {
+		server.Cleanup()
+		core.Jobs.Remove(job)
+		core.EventBroker.Publish(core.Event{
+			Job:       job,
+			EventType: consts.JobStoppedEvent,
+			Err:       err,
+		})
+	}
+	once := &sync.Once{}
+
+	go func() {
+		<-job.JobCtrl
+		once.Do(func() { cleanup(nil) })
+	}()
+
+	return job, nil
+}
+
 // StartHTTPListenerJob - Start a HTTP listener as a job
 func StartHTTPListenerJob(req *clientpb.HTTPListenerReq) (*core.Job, error) {
 	server, err := StartHTTPListener(req)

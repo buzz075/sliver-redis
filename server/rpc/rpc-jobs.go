@@ -39,6 +39,7 @@ const (
 	defaultDNSPort     = 53
 	defaultHTTPPort    = 80
 	defaultHTTPSPort   = 443
+	defaultRedisPort   = 6379
 )
 
 var (
@@ -277,6 +278,38 @@ func (rpc *Server) StartHTTPListener(ctx context.Context, req *clientpb.HTTPList
 	return &clientpb.ListenerJob{JobID: uint32(job.ID)}, nil
 }
 
+// StartRedisListener - Start a Redis listener
+func (rpc *Server) StartRedisListener(ctx context.Context, req *clientpb.RedisListenerReq) (*clientpb.ListenerJob, error) {
+	if 65535 <= req.Port {
+		return nil, ErrInvalidPort
+	}
+	if req.Port == 0 {
+		req.Port = defaultRedisPort
+	}
+
+	err := PortInUse(req.Port)
+	if err != nil {
+		return nil, err
+	}
+
+	job, err := c2.StartRedisListenerJob(req)
+	if err != nil {
+		return nil, err
+	}
+
+	listenerJob := &clientpb.ListenerJob{
+		JobID:     uint32(job.ID),
+		Type:      constants.RedisStr,
+		RedisConf: req,
+	}
+	err = db.SaveC2Listener(listenerJob)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientpb.ListenerJob{JobID: uint32(job.ID)}, nil
+}
+
 func PortInUse(newPort uint32) error {
 	listenerJobs, err := db.ListenerJobs()
 	if err != nil {
@@ -299,6 +332,8 @@ func PortInUse(newPort uint32) error {
 			port = listener.DNSConf.Port
 		case "wg":
 			port = listener.WGConf.Port
+		case "redis":
+			port = listener.RedisConf.Port
 		case "multiplayer":
 			port = listener.MultiConf.Port
 		}
