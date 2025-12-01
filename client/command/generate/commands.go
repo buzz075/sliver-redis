@@ -319,6 +319,7 @@ func coreImplantFlags(name string, cmd *cobra.Command) {
 		f.StringP("dns", "n", "", "dns connection strings")
 		f.StringP("named-pipe", "p", "", "named-pipe connection strings")
 		f.StringP("tcp-pivot", "i", "", "tcp-pivot connection strings")
+		f.StringP("redis", "r", "", "redis connection strings")
 
 		f.Uint32P("key-exchange", "X", DefaultWGKeyExPort, "wg key-exchange port")
 		f.Uint32P("tcp-comms", "T", DefaultWGNPort, "wg c2 comms port")

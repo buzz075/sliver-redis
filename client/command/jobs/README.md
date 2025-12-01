@@ -14,3 +14,4 @@ Implements the 'jobs' command group for the Sliver client console. Handlers map 
 - `mtls.go` – Controls mTLS listener jobs and prints connection details.
 - `stage.go` – Manages staging servers for delivering payloads to new implants.
 - `wg.go` – Configures and monitors WireGuard listener jobs for C2 traffic.
+- `redis.go` - Sets up a redis connection for C2

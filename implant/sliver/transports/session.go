@@ -24,7 +24,7 @@ import (
 
 	// {{end}}
 
-	// {{if or .Config.IncludeMTLS .Config.IncludeWG}}
+	// {{if or .Config.IncludeMTLS .Config.IncludeWG .Config.IncludeRedis}}
 	"strconv"
 	// {{end}}
 
@@ -721,7 +721,13 @@ func redisConnect(uri *url.URL) (*Connection, error) {
 					return
 				default:
 					envelope, err := client.ReadEnvelope()
-					if err == redisclient.ErrClosed {
+					switch err {
+					case io.EOF:
+						// {{if .Config.Debug}}
+						log.Printf("[redis] eof")
+						// {{end}}
+						return
+					case redisclient.ErrClosed:
 						// {{if .Config.Debug}}
 						log.Printf("[redis] session closed")
 						// {{end}}

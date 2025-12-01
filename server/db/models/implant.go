@@ -185,6 +185,7 @@ type ImplantConfig struct {
 	CanaryDomains   []CanaryDomain
 	IncludeNamePipe bool
 	IncludeTCP      bool
+	IncludeRedis    bool
 
 	// Limits
 	LimitDomainJoined bool
@@ -467,6 +468,7 @@ func ImplantConfigFromProtobuf(pbConfig *clientpb.ImplantConfig) *ImplantConfig 
 	cfg.IncludeDNS = IsC2Enabled([]string{"dns"}, pbConfig.C2)
 	cfg.IncludeNamePipe = IsC2Enabled([]string{"namedpipe"}, pbConfig.C2)
 	cfg.IncludeTCP = IsC2Enabled([]string{"tcppivot"}, pbConfig.C2)
+	cfg.IncludeRedis = IsC2Enabled([]string{"redis"}, pbConfig.C2)
 
 	cfg.WGPeerTunIP = pbConfig.WGPeerTunIP
 	cfg.WGKeyExchangePort = pbConfig.WGKeyExchangePort

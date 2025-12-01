@@ -550,7 +550,10 @@ func (con *SliverClient) GetActiveSessionConfig() *clientpb.ImplantConfig {
 		config.IncludeNamePipe = true
 	case "tcppivot":
 		config.IncludeTCP = true
+	case "redis":
+		config.IncludeRedis = true
 	}
+	log.Println(config)
 	return config
 }
 
@@ -597,7 +600,10 @@ func (con *SliverClient) GetActiveBeaconConfig() *clientpb.ImplantConfig {
 		config.IncludeNamePipe = true
 	case "tcppivot":
 		config.IncludeTCP = true
+	case "redis":
+		config.IncludeRedis = true
 	}
+	log.Println(config)
 	return config
 }
 

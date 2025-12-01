@@ -59,6 +59,8 @@ const (
 	DefaultDNSLPort = 53
 	// DefaultTCPPivotPort is the default port for tcp pivots.
 	DefaultTCPPivotPort = 9898
+	// Default Redis Port
+	DefaultRedisPort = 6379
 
 	// DefaultReconnect is the default reconnect time.
 	DefaultReconnect = 60
@@ -221,6 +223,14 @@ func parseCompileFlags(cmd *cobra.Command, con *console.SliverClient) (string, *
 	}
 	c2s = append(c2s, httpC2...)
 
+	redisC2F, _ := cmd.Flags().GetString("redis")
+	redisC2, err := ParseRedisc2(redisC2F)
+	if err != nil {
+		con.PrintErrorf("%s\n", err.Error())
+		return "", nil
+	}
+	c2s = append(c2s, redisC2...)
+
 	dnsC2F, _ := cmd.Flags().GetString("dns")
 	dnsC2, err := ParseDNSc2(dnsC2F)
 	if err != nil {
@@ -253,8 +263,8 @@ func parseCompileFlags(cmd *cobra.Command, con *console.SliverClient) (string, *
 		symbolObfuscation = !symbolObfuscation
 	}
 
-	if len(mtlsC2) == 0 && len(wgC2) == 0 && len(httpC2) == 0 && len(dnsC2) == 0 && len(namedPipeC2) == 0 && len(tcpPivotC2) == 0 {
-		con.PrintErrorf("Must specify at least one of --mtls, --wg, --http, --dns, --named-pipe, or --tcp-pivot\n")
+	if len(mtlsC2) == 0 && len(wgC2) == 0 && len(httpC2) == 0 && len(dnsC2) == 0 && len(namedPipeC2) == 0 && len(tcpPivotC2) == 0 && len(redisC2) == 0 {
+		con.PrintErrorf("Must specify at least one of --mtls, --wg, --http, --dns, --named-pipe, --redis or --tcp-pivot\n")
 		return "", nil
 	}
 
@@ -416,7 +426,6 @@ func parseCompileFlags(cmd *cobra.Command, con *console.SliverClient) (string, *
 		DebugFile:        debugFile,
 		HTTPC2ConfigName: c2Profile,
 	}
-
 	return name, config
 }
 
@@ -670,6 +679,43 @@ func ParseHTTPc2(args string) ([]*clientpb.ImplantC2, error) {
 				URL:      uri.String(),
 			})
 		}
+	}
+	return c2s, nil
+}
+
+// ParseRedisc2 - Parse Redis connection string arg.
+func ParseRedisc2(args string) ([]*clientpb.ImplantC2, error) {
+	c2s := []*clientpb.ImplantC2{}
+	fmt.Println("Parsing redis opts")
+	if args == "" {
+		return c2s, nil
+	}
+	allArguments := strings.Split(args, ",")
+	for index, arg := range allArguments {
+		var uri *url.URL
+		var err error
+		if cmp := strings.ToLower(arg); strings.HasPrefix(cmp, "redis://") {
+			uri, err = url.Parse(arg)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			uri, err = url.Parse(fmt.Sprintf("redis://%s", arg))
+			if err != nil {
+				return nil, err
+			}
+		}
+		uri.Path = strings.TrimSuffix(uri.Path, "/")
+		if uri.Scheme != "redis" {
+			return nil, fmt.Errorf("invalid redis scheme: %s", uri.Scheme)
+		}
+		if ok, err := hasValidC2AdvancedOptions(uri.Query()); !ok {
+			return nil, err
+		}
+		c2s = append(c2s, &clientpb.ImplantC2{
+			Priority: uint32(index),
+			URL:      uri.String(),
+		})
 	}
 	return c2s, nil
 }

@@ -6,6 +6,7 @@ require (
 	filippo.io/age v1.1.1
 	github.com/Binject/universal v0.0.0-20220519011857-bea739e758c0
 	github.com/Ne0nd0g/go-clr v1.0.3
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/kbinani/screenshot v0.0.0-20191211154542-3a185f1ce18f
 	github.com/lesnuages/go-winio v0.4.19
@@ -29,7 +30,9 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/awgh/cppgo v0.0.0-20210224085512-3d24bca8edc0 // indirect
 	github.com/awgh/rawreader v0.0.0-20200626064944-56820a9c6da4 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gen2brain/shm v0.0.0-20200228170931-49f9650110c5 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect

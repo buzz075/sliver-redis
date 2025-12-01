@@ -89,6 +89,7 @@ func (rpc *Server) Generate(ctx context.Context, req *clientpb.GenerateReq) (*cl
 		config.IncludeDNS = models.IsC2Enabled([]string{"dns"}, config.C2)
 		config.IncludeNamePipe = models.IsC2Enabled([]string{"namedpipe"}, config.C2)
 		config.IncludeTCP = models.IsC2Enabled([]string{"tcppivot"}, config.C2)
+		config.IncludeRedis = models.IsC2Enabled([]string{"redis"}, config.C2)
 	}
 
 	if len(config.Exports) == 0 {

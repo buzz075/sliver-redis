@@ -32,6 +32,7 @@ func SliverExternal(name string, config *clientpb.ImplantConfig) (*clientpb.Exte
 	config.IncludeDNS = models.IsC2Enabled([]string{"dns"}, config.C2)
 	config.IncludeNamePipe = models.IsC2Enabled([]string{"namedpipe"}, config.C2)
 	config.IncludeTCP = models.IsC2Enabled([]string{"tcppivot"}, config.C2)
+	config.IncludeRedis = models.IsC2Enabled([]string{"redis"}, config.C2)
 
 	// set file extension for external builds
 	if config.IsSharedLib {

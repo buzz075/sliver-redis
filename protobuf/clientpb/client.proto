@@ -155,6 +155,7 @@ message ImplantConfig {
   bool IncludeDNS = 18;
   bool IncludeNamePipe = 19;
   bool IncludeTCP = 20;
+  bool IncludeRedis = 21;
 
   string WGPeerTunIP = 32;
   uint32 WGKeyExchangePort = 33;

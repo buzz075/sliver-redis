@@ -297,11 +297,11 @@ func SliverExecutable(name string, build *clientpb.ImplantBuild, config *clientp
 		GOGARBLE:    goGarble(config),
 	}
 
+	fmt.Println("Rendering sliver code")
 	pkgPath, err := renderSliverGoCode(name, build, config, goConfig, pbC2Implant)
 	if err != nil {
 		return "", err
 	}
-
 	dest := filepath.Join(goConfig.ProjectDir, "bin", filepath.Base(name))
 	if goConfig.GOOS == WINDOWS {
 		dest += ".exe"
